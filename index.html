@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sales performance dashboard</title>
+<style>:root{--color-fg:#1f1e1d;--color-fg-muted:#6b6862;--color-bg:#faf9f5;--color-panel:#ffffff;--color-border-line:#e6e3da;
+--font-anthropic-sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--font-anthropic-serif:Georgia,"Times New Roman",serif;
+--cds-font-size-caption:12.5px;--cds-font-size-body:15px;--cds-font-size-heading:17px;--cds-font-size-title:30px;--cds-font-weight-medium:600;
+--cds-gap-xs:4px;--cds-gap-sm:8px;--cds-gap-md:12px;--cds-gap-lg:20px;--cds-gap-xl:32px;--cds-pad-sm:6px;--cds-pad-md:10px;--cds-pad-lg:16px;--cds-radius:8px;
+--cds-chart-grid:#ecebe6;--cds-chart-reference:#9b978d;--cds-chart-muted:#c9c6bd;--cds-text-secondary:#6b6862;
+--cds-surface-popover:#ffffff;--cds-border:#e0ddd3;--cds-shadow-popover:0 4px 16px rgba(0,0,0,.12);
+--c0:#2f6fb5;--c1:#d9822b;--c2:#3c9a6b;--c3:#8a5cc2}
+@media (prefers-color-scheme: dark){:root{--color-fg:#ecebe6;--color-fg-muted:#a8a59c;--color-bg:#1c1b19;--color-panel:#262522;--color-border-line:#3a3935;
+--cds-chart-grid:#33322e;--cds-chart-reference:#8b887f;--cds-text-secondary:#a8a59c;--cds-surface-popover:#2c2b28;--cds-border:#44433e;--c0:#6aa3e0;--c1:#e9a25a}}
+html,body{margin:0;background:var(--color-bg)}
+.page{max-width:1200px;margin:0 auto;padding:28px 20px 48px}
+.dash-select{font:inherit;font-size:13px;color:var(--color-fg);background-color:var(--color-panel);border:1px solid var(--color-border-line);border-radius:8px;padding:6px 10px}
+.dash-skeleton{color:transparent;background:var(--color-border-line);border-radius:4px}
+.foot{margin-top:28px;font-size:12px;color:var(--color-fg-muted);font-family:system-ui,sans-serif}
+</style>
+<style>
+.sd{font-family:var(--font-anthropic-sans);color:var(--color-fg);display:flex;flex-direction:column;gap:var(--cds-gap-xl)}
+.sd h1{font-family:var(--font-anthropic-serif);font-weight:400;font-size:var(--cds-font-size-title);margin:0}
+.sd h2{font-size:var(--cds-font-size-heading);font-weight:var(--cds-font-weight-medium);margin:0 0 var(--cds-gap-xs)}
+.sd-lede{font-size:var(--cds-font-size-body);margin:var(--cds-gap-sm) 0 0;max-width:64em;line-height:1.5}
+.sd-sub{color:var(--color-fg-muted);font-size:var(--cds-font-size-caption);margin:0 0 var(--cds-gap-sm);line-height:1.45}
+.sd-filters{display:flex;flex-wrap:wrap;gap:var(--cds-gap-sm);align-items:center}
+.sd-btn{font:inherit;font-size:var(--cds-font-size-caption);background:var(--color-panel);color:var(--color-fg);border:1px solid var(--color-border-line);border-radius:var(--cds-radius);padding:6px 12px;cursor:pointer}
+.sd-scope{font-size:var(--cds-font-size-caption);color:var(--color-fg-muted)}
+.sd-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:var(--cds-gap-md)}
+.sd-card{background:var(--color-panel);border:1px solid var(--color-border-line);border-radius:var(--cds-radius);padding:var(--cds-pad-lg)}
+.sd-kpi-v{font-family:var(--font-anthropic-serif);font-weight:400;font-size:2.1em;line-height:1.1;font-variant-numeric:tabular-nums}
+.sd-kpi-l{color:var(--color-fg-muted);font-size:var(--cds-font-size-caption);margin-top:var(--cds-gap-xs)}
+.sd-grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:var(--cds-gap-xl)}
+.sd-chart{position:relative;min-height:140px}
+.sd-chart svg{display:block;overflow:visible}
+.sd-lbl{font-size:var(--cds-font-size-caption);fill:var(--color-fg)}
+.sd-axis{font-size:var(--cds-font-size-caption);fill:var(--cds-text-secondary)}
+.sd-legend{display:flex;flex-wrap:wrap;gap:var(--cds-gap-md);font-size:var(--cds-font-size-caption);color:var(--color-fg-muted);margin-bottom:var(--cds-gap-sm)}
+.sd-legend span{display:inline-flex;align-items:center;gap:6px}
+.sd-sw{width:12px;height:12px;border-radius:3px;display:inline-block}
+.sd-tip{position:absolute;pointer-events:none;z-index:5;background:var(--cds-surface-popover);border:1px solid var(--cds-border);box-shadow:var(--cds-shadow-popover);border-radius:var(--cds-radius);padding:var(--cds-pad-sm) var(--cds-pad-md);font-size:var(--cds-font-size-caption);max-width:240px;line-height:1.4;white-space:nowrap}
+.sd-tip div+div{color:var(--cds-text-secondary)}
+.sd-tip .sd-tip-h{font-weight:var(--cds-font-weight-medium);color:var(--color-fg)}
+.sd-tablewrap{overflow-x:auto}
+.sd-table{border-collapse:collapse;font-size:var(--cds-font-size-caption);width:100%;min-width:560px}
+.sd-table th,.sd-table td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--color-border-line)}
+.sd-table th{color:var(--color-fg-muted);font-weight:var(--cds-font-weight-medium)}
+.sd-table .num{text-align:right;font-variant-numeric:tabular-nums}
+.sd details{font-size:var(--cds-font-size-caption);color:var(--color-fg-muted);line-height:1.5}
+.sd details summary{cursor:pointer;color:var(--color-fg)}
+.sd details li{margin-bottom:4px}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+</head>
+<body>
+<div class="page">
+<div class="sd">
+<header id="top">
+<h1>Sales performance: 1 million orders, 2010–2017</h1>
+<p class="sd-lede"><b data-draw="rev" data-source="kpi" data-field="revenue" data-row="0" class="dash-skeleton">—</b> in revenue and <b data-draw="prof" data-source="kpi" data-field="profit" data-row="0" class="dash-skeleton">—</b> in profit, a <b data-draw="margin" data-source="kpi" data-field="margin_pct" data-row="0" class="dash-skeleton">—</b> margin, across <b data-draw="orders" data-source="kpi" data-field="orders" data-row="0" class="dash-skeleton">—</b> orders. <b data-draw="topitem" data-source="by_item" data-field="item" data-row="0">—</b> brings in the most revenue, while <b data-draw="topmargin" data-source="by_item" data-field="item">—</b> earns the highest margin.</p>
+</header>
+
+<section id="filters" class="sd-filters">
+<select class="dash-select" data-param="region" aria-label="Region"><option value="">All regions</option><option>Asia</option><option>Australia and Oceania</option><option>Central America and the Caribbean</option><option>Europe</option><option>Middle East and North Africa</option><option>North America</option><option>Sub-Saharan Africa</option></select>
+<select class="dash-select" data-param="item" aria-label="Item type"><option value="">All item types</option><option>Baby Food</option><option>Beverages</option><option>Cereal</option><option>Clothes</option><option>Cosmetics</option><option>Fruits</option><option>Household</option><option>Meat</option><option>Office Supplies</option><option>Personal Care</option><option>Snacks</option><option>Vegetables</option></select>
+<select class="dash-select" data-param="channel" aria-label="Sales channel"><option value="">All channels</option><option>Online</option><option>Offline</option></select>
+<select class="dash-select" data-param="year" aria-label="Year"><option value="">All years</option><option>2010</option><option>2011</option><option>2012</option><option>2013</option><option>2014</option><option>2015</option><option>2016</option><option>2017</option></select>
+<button type="button" class="sd-btn" id="reset">Reset filters</button>
+<span class="sd-scope" data-draw="scope">—</span>
+</section>
+
+<section class="sd-kpis" id="kpis">
+<div class="sd-card" id="kpi-revenue"><div class="sd-kpi-v" data-draw="k_rev" data-source="kpi" data-field="revenue" data-row="0">—</div><div class="sd-kpi-l">Total revenue</div></div>
+<div class="sd-card" id="kpi-profit"><div class="sd-kpi-v" data-draw="k_prof" data-source="kpi" data-field="profit" data-row="0">—</div><div class="sd-kpi-l">Total profit</div></div>
+<div class="sd-card" id="kpi-margin"><div class="sd-kpi-v" data-draw="k_margin" data-source="kpi" data-field="margin_pct" data-row="0">—</div><div class="sd-kpi-l">Profit margin</div></div>
+<div class="sd-card" id="kpi-orders"><div class="sd-kpi-v" data-draw="k_orders" data-source="kpi" data-field="orders" data-row="0">—</div><div class="sd-kpi-l">Orders</div></div>
+<div class="sd-card" id="kpi-units"><div class="sd-kpi-v" data-draw="k_units" data-source="kpi" data-field="units" data-row="0">—</div><div class="sd-kpi-l">Units sold</div></div>
+<div class="sd-card" id="kpi-ship"><div class="sd-kpi-v" data-draw="k_ship" data-source="kpi" data-field="avg_ship_days" data-row="0">—</div><div class="sd-kpi-l">Average days from order to ship</div></div>
+</section>
+
+<section id="trend">
+<h2>Monthly revenue and profit</h2>
+<p class="sd-sub">Orders run from January 2010 to July 2017, so 2017 is a part year.</p>
+<div class="sd-legend"><span><i class="sd-sw" data-sw="0"></i>Revenue</span><span><i class="sd-sw" data-sw="1"></i>Profit</span></div>
+<div class="sd-chart" id="trend-chart" data-draw="trend" data-source="by_month" style="min-height:260px">—</div>
+</section>
+
+<div class="sd-grid2">
+<section id="items">
+<h2>Revenue by item type</h2>
+<p class="sd-sub">Labels show profit margin. Click a bar to filter the page.</p>
+<div class="sd-chart" id="item-chart" data-draw="items" data-source="by_item">—</div>
+</section>
+<section id="regions">
+<h2>Revenue by region</h2>
+<p class="sd-sub">Click a bar to filter the page.</p>
+<div class="sd-chart" id="region-chart" data-draw="regions" data-source="by_region">—</div>
+<h2 id="channels-h" style="margin-top:var(--cds-gap-lg)">Online vs offline</h2>
+<div class="sd-chart" id="channel-chart" data-draw="channels" data-source="by_channel" style="min-height:70px">—</div>
+</section>
+</div>
+
+<section id="countries">
+<h2>Top 15 countries by revenue</h2>
+<p class="sd-sub" id="country-note" hidden>Item type and channel filters don't apply to this table; it follows region and year only.</p>
+<div class="sd-tablewrap">
+<table class="sd-table" data-source="top_countries" data-row-key="country">
+<thead><tr><th data-field="country">Country</th><th data-field="region">Region</th><th data-field="revenue" class="num">Revenue</th><th data-field="profit" class="num">Profit</th><th data-field="margin_pct" class="num">Margin %</th><th data-field="orders" class="num">Orders</th></tr></thead>
+<tbody data-draw="countries"></tbody>
+</table>
+</div>
+</section>
+
+<details id="notes"><summary>About this data</summary>
+<ul>
+<li>This is a widely used synthetic sample dataset of retail orders, not real company sales. Each item type has one fixed unit price and cost, so margins differ by item but are almost identical across regions, channels and order priorities.</li>
+<li>Some order IDs appear twice in the file. The dashboard counts every row as given.</li>
+<li>Days to ship are spread evenly from 0 to 50 and don't vary with order priority.</li>
+</ul>
+</details>
+</div>
+
+
+<p class="foot">Built from the synthetic "1,000,000 Sales Records" sample dataset, aggregated by build.py.</p>
+</div>
+<script>
+window.dash = (() => {
+  const files = {cube: 'data/cube.json', country: 'data/country.json'};
+  const defaults = {region: '', item: '', channel: '', year: ''};
+  const src = {}, calcs = {}, draws = new Map(), onDatas = [];
+  let params = {...defaults}, cache = {};
+  const rows = (id) => { const d = api.data(id); return d.status === 'ok' ? d.data : null; };
+  const api = {
+    colors: ['var(--c0)', 'var(--c1)', 'var(--c2)', 'var(--c3)'],
+    params: () => ({...params}),
+    setParams: (o) => { Object.assign(params, o); render(); },
+    resetParams: () => { params = {...defaults}; render(); },
+    calc: (id, def) => { calcs[id] = def; },
+    data: (id) => {
+      if (src[id]) return src[id];
+      const c = calcs[id];
+      if (!c) return {status: 'missing', data: []};
+      if (id in cache) return cache[id];
+      const inputs = c.inputs.map(rows);
+      const out = inputs.some((x) => x == null) ? {status: 'loading', data: null} : {status: 'ok', data: c.fn(...inputs)};
+      if (out.status === 'ok') cache[id] = out;
+      return out;
+    },
+    onData: (fn) => { onDatas.push(fn); fn(); },
+    draw: (name, fn) => {
+      if (fn) { draws.set(name, fn); return; }
+      const f = draws.get(name); if (f) document.querySelectorAll(`[data-draw="${name}"]`).forEach((el) => f(el));
+    },
+    refresh: () => {}, setLink: () => {}
+  };
+  const render = () => {
+    cache = {};
+    onDatas.forEach((f) => f());
+    draws.forEach((f, name) => document.querySelectorAll(`[data-draw="${name}"]`).forEach((el) => { try { f(el); } catch (e) { console.error(name, e); } }));
+  };
+  Object.keys(files).forEach((id) => { src[id] = {status: 'loading', data: []}; });
+  window.addEventListener('load', () => {
+    render();
+    Promise.all(Object.entries(files).map(([id, url]) => fetch(url).then((r) => r.json()).then((j) => { src[id] = {status: 'ok', data: j.rows || j}; })
+      .catch(() => { src[id] = {status: 'error', data: []}; }))).then(render);
+    let t; window.addEventListener('resize', () => { clearTimeout(t); t = setTimeout(render, 150); });
+  });
+  return api;
+})();
+</script>
+<script>
+const keepRow = (p, skip) => (r) =>
+  (skip === 'region' || !p.region || r.region === p.region) &&
+  (skip === 'item' || !p.item || r.item === p.item) &&
+  (skip === 'channel' || !p.channel || r.channel === p.channel) &&
+  (!p.year || String(r.month).slice(0, 4) === p.year);
+const sumBy = (rows, key) => Array.from(d3.rollup(rows, (v) => ({
+  revenue: d3.sum(v, (d) => +d.revenue), profit: d3.sum(v, (d) => +d.profit), orders: d3.sum(v, (d) => +d.orders)
+}), (d) => d[key]), ([k, s]) => ({[key]: k, revenue: +s.revenue.toFixed(2), profit: +s.profit.toFixed(2), orders: s.orders,
+  margin_pct: s.revenue ? +(s.profit / s.revenue * 100).toFixed(1) : null}));
+
+dash.calc('kpi', {inputs: ['cube'], title: 'Totals for the selection',
+  description: 'Revenue, profit, orders and units summed over the filtered rows, with margin and average days to ship',
+  fn: (cube) => {
+    const p = dash.params();
+    const s = {orders: 0, units: 0, revenue: 0, cost: 0, profit: 0, ship_days_sum: 0};
+    cube.filter(keepRow(p)).forEach((r) => { for (const k in s) s[k] += +r[k]; });
+    return [{revenue: +s.revenue.toFixed(2), profit: +s.profit.toFixed(2), cost: +s.cost.toFixed(2), orders: s.orders, units: s.units,
+      margin_pct: s.revenue ? +(s.profit / s.revenue * 100).toFixed(1) : null,
+      avg_ship_days: s.orders ? +(s.ship_days_sum / s.orders).toFixed(1) : null}];
+  }});
+dash.calc('by_month', {inputs: ['cube'], title: 'Revenue and profit by month',
+  description: 'Filtered rows summed by order month',
+  fn: (cube) => sumBy(cube.filter(keepRow(dash.params())), 'month').sort((a, b) => a.month.localeCompare(b.month))});
+dash.calc('by_item', {inputs: ['cube'], title: 'Revenue by item type',
+  description: 'Filtered rows summed by item type, ignoring the item filter so every item stays visible',
+  fn: (cube) => sumBy(cube.filter(keepRow(dash.params(), 'item')), 'item').sort((a, b) => b.revenue - a.revenue)});
+dash.calc('by_region', {inputs: ['cube'], title: 'Revenue by region',
+  description: 'Filtered rows summed by region, ignoring the region filter so every region stays visible',
+  fn: (cube) => sumBy(cube.filter(keepRow(dash.params(), 'region')), 'region').sort((a, b) => b.revenue - a.revenue)});
+dash.calc('by_channel', {inputs: ['cube'], title: 'Revenue by sales channel',
+  description: 'Filtered rows summed by channel, ignoring the channel filter so both channels stay visible',
+  fn: (cube) => sumBy(cube.filter(keepRow(dash.params(), 'channel')), 'channel').sort((a, b) => b.revenue - a.revenue)});
+dash.calc('top_countries', {inputs: ['country'], title: 'Top 15 countries by revenue',
+  description: 'Country totals for the selected region and year, top 15 by revenue',
+  fn: (country) => {
+    const p = dash.params();
+    const rows = country.filter((r) => (!p.region || r.region === p.region) && (!p.year || String(r.year) === p.year));
+    const regionOf = new Map(rows.map((r) => [r.country, r.region]));
+    return sumBy(rows, 'country').map((r) => ({...r, region: regionOf.get(r.country)}))
+      .sort((a, b) => b.revenue - a.revenue).slice(0, 15);
+  }});
+
+window.sdMoney = (v) => d3.format('$.3~s')(v).replace('G', 'B');
+window.sdInt = d3.format(',');
+window.sdCol = (i) => dash.colors[i % dash.colors.length];
+document.querySelectorAll('[data-sw]').forEach((s) => { s.style.background = window.sdCol(+s.dataset.sw); });
+
+const kpiDraw = (name, field, fmt) => dash.draw(name, (el) => {
+  const k = dash.data('kpi');
+  if (k.status !== 'ok' || !k.data || !k.data.length) { if (k.status !== 'loading') el.classList.remove('dash-skeleton'); el.textContent = '—'; return; }
+  el.classList.remove('dash-skeleton');
+  const v = k.data[0][field];
+  el.textContent = v == null ? '—' : fmt(v);
+});
+kpiDraw('rev', 'revenue', window.sdMoney); kpiDraw('prof', 'profit', window.sdMoney);
+kpiDraw('margin', 'margin_pct', (v) => v + '%'); kpiDraw('orders', 'orders', window.sdInt);
+kpiDraw('k_rev', 'revenue', window.sdMoney); kpiDraw('k_prof', 'profit', window.sdMoney);
+kpiDraw('k_margin', 'margin_pct', (v) => v + '%'); kpiDraw('k_orders', 'orders', window.sdInt);
+kpiDraw('k_units', 'units', (v) => d3.format('.3~s')(v).replace('G', 'B')); kpiDraw('k_ship', 'avg_ship_days', (v) => String(v));
+
+dash.draw('topitem', (el) => {
+  const d = dash.data('by_item');
+  el.textContent = d.status === 'ok' && d.data && d.data.length ? d.data[0].item : '—';
+});
+dash.draw('topmargin', (el) => {
+  const d = dash.data('by_item');
+  if (d.status !== 'ok' || !d.data || !d.data.length) { el.textContent = '—'; return; }
+  const best = d.data.reduce((a, b) => (b.margin_pct > a.margin_pct ? b : a));
+  el.setAttribute('data-where', 'item=' + encodeURIComponent(best.item));
+  el.textContent = best.item;
+});
+dash.draw('scope', (el) => {
+  const p = dash.params();
+  const parts = [p.region, p.item, p.channel, p.year].filter(Boolean);
+  el.textContent = parts.length ? 'Showing: ' + parts.join(' · ') : 'Showing all orders';
+});
+
+window.sdTip = (el) => { const t = document.createElement('div'); t.className = 'sd-tip'; t.hidden = true; el.appendChild(t); return t; };
+window.sdShow = (t, el, evt, lines) => {
+  t.replaceChildren(...lines.map((s, i) => { const d = document.createElement('div'); d.textContent = s; if (i === 0) d.className = 'sd-tip-h'; return d; }));
+  t.hidden = false;
+  const r = el.getBoundingClientRect();
+  let x = evt.clientX - r.left + 14; const y = Math.max(0, evt.clientY - r.top - 10);
+  const w = t.offsetWidth;
+  if (x + w > r.width) x = Math.max(0, evt.clientX - r.left - w - 14);
+  t.style.left = x + 'px'; t.style.top = y + 'px';
+};
+const sdFail = (el, d) => { el.textContent = d.status === 'error' ? 'Failed to load' : '—'; };
+
+dash.draw('trend', (el) => {
+  el.replaceChildren();
+  const d = dash.data('by_month');
+  if (d.status !== 'ok' || !d.data) { sdFail(el, d); return; }
+  if (!d.data.length) { el.textContent = 'No orders match these filters.'; return; }
+  const pts = d.data.map((r) => ({...r, date: new Date(Date.UTC(+r.month.slice(0, 4), +r.month.slice(5, 7) - 1, 1))}));
+  const W = el.clientWidth || 640, H = 260, mt = 10, mb = 26, mr = 12;
+  const svg = d3.select(el).append('svg').attr('width', '100%').attr('height', H).attr('viewBox', `0 0 ${W} ${H}`)
+    .attr('role', 'img').attr('aria-label', 'Line chart of monthly revenue and profit');
+  const y = d3.scaleLinear().domain([0, d3.max(pts, (p) => p.revenue) * 1.05]).nice().range([H - mb, mt]);
+  const ticks = y.ticks(4);
+  let ml = 0;
+  ticks.forEach((t) => { const n = svg.append('text').attr('class', 'sd-axis').text(window.sdMoney(t)); ml = Math.max(ml, n.node().getComputedTextLength()); n.remove(); });
+  ml += 10;
+  const x = d3.scaleUtc().domain(d3.extent(pts, (p) => p.date)).range([ml, W - mr]);
+  ticks.forEach((t) => {
+    svg.append('line').attr('x1', ml).attr('x2', W - mr).attr('y1', y(t)).attr('y2', y(t)).style('stroke', 'var(--cds-chart-grid)');
+    svg.append('text').attr('class', 'sd-axis').attr('x', ml - 8).attr('y', y(t)).attr('dy', '0.35em').attr('text-anchor', 'end').text(window.sdMoney(t));
+  });
+  const span = pts.length;
+  const xt = x.ticks(span > 24 ? Math.max(2, Math.min(8, Math.floor(W / 90))) : Math.max(2, Math.floor(W / 110)));
+  const xf = span > 24 ? d3.utcFormat('%Y') : d3.utcFormat('%b %Y');
+  xt.forEach((t) => svg.append('text').attr('class', 'sd-axis').attr('x', x(t)).attr('y', H - 6).attr('text-anchor', 'middle').text(xf(t)));
+  [['revenue', 0], ['profit', 1]].forEach(([k, i]) => {
+    svg.append('path').datum(pts).attr('d', d3.line().x((p) => x(p.date)).y((p) => y(p[k])))
+      .style('fill', 'none').style('stroke', window.sdCol(i)).style('stroke-width', 2);
+  });
+  const guide = svg.append('line').attr('y1', mt).attr('y2', H - mb).style('stroke', 'var(--cds-chart-reference)').style('display', 'none');
+  const dots = [0, 1].map((i) => svg.append('circle').attr('r', 4).style('fill', window.sdCol(i)).style('display', 'none'));
+  const tip = window.sdTip(el);
+  const fmtM = d3.utcFormat('%B %Y');
+  const bis = d3.bisector((p) => p.date).center;
+  svg.append('rect').attr('x', ml).attr('y', mt).attr('width', Math.max(0, W - mr - ml)).attr('height', H - mb - mt).style('fill', 'transparent')
+    .on('pointermove pointerdown', (evt) => {
+      const [mx] = d3.pointer(evt);
+      const p = pts[bis(pts, x.invert(mx))];
+      guide.attr('x1', x(p.date)).attr('x2', x(p.date)).style('display', null);
+      dots[0].attr('cx', x(p.date)).attr('cy', y(p.revenue)).style('display', null);
+      dots[1].attr('cx', x(p.date)).attr('cy', y(p.profit)).style('display', null);
+      window.sdShow(tip, el, evt, [fmtM(p.date), 'Revenue ' + window.sdMoney(p.revenue), 'Profit ' + window.sdMoney(p.profit), 'Margin ' + p.margin_pct + '%', window.sdInt(p.orders) + ' orders']);
+    })
+    .on('pointerleave', () => { tip.hidden = true; guide.style('display', 'none'); dots.forEach((c) => c.style('display', 'none')); });
+});
+
+const hbar = (name, calcId, key, param) => dash.draw(name, (el) => {
+  el.replaceChildren();
+  const d = dash.data(calcId);
+  if (d.status !== 'ok' || !d.data) { sdFail(el, d); return; }
+  if (!d.data.length) { el.textContent = 'No orders match these filters.'; return; }
+  const rows = d.data;
+  const chosen = dash.params()[param] || '';
+  const W = el.clientWidth || 480, rowH = 30;
+  const H = rows.length * rowH + 4;
+  const svg = d3.select(el).append('svg').attr('width', '100%').attr('height', H).attr('viewBox', `0 0 ${W} ${H}`)
+    .attr('role', 'img').attr('aria-label', 'Bar chart of revenue by ' + key);
+  let ml = 0;
+  rows.forEach((r) => { const t = svg.append('text').attr('class', 'sd-lbl').text(r[key]); ml = Math.max(ml, t.node().getComputedTextLength()); t.remove(); });
+  ml += 12;
+  const lab = (r) => window.sdMoney(r.revenue) + ' · ' + r.margin_pct + '%';
+  let endW = 0;
+  rows.forEach((r) => { const t = svg.append('text').attr('class', 'sd-axis').text(lab(r)); endW = Math.max(endW, t.node().getComputedTextLength()); t.remove(); });
+  endW += 12;
+  const x = d3.scaleLinear().domain([0, d3.max(rows, (r) => r.revenue) || 1]).range([ml, Math.max(ml + 40, W - endW)]);
+  const tip = window.sdTip(el);
+  rows.forEach((r, i) => {
+    const y0 = i * rowH + 2;
+    const on = !chosen || chosen === r[key];
+    const g = svg.append('g').style('cursor', 'pointer');
+    g.append('text').attr('class', 'sd-lbl').attr('x', ml - 8).attr('y', y0 + rowH / 2).attr('dy', '0.35em').attr('text-anchor', 'end').text(r[key]);
+    g.append('rect').attr('x', ml).attr('y', y0 + 6).attr('height', rowH - 12).attr('width', Math.max(2, x(r.revenue) - ml)).attr('rx', 3)
+      .style('fill', window.sdCol(0)).style('opacity', on ? 1 : 0.3);
+    g.append('text').attr('class', 'sd-axis').attr('x', x(r.revenue) + 6).attr('y', y0 + rowH / 2).attr('dy', '0.35em').text(lab(r));
+    g.append('rect').attr('x', 0).attr('width', W).attr('y', y0).attr('height', rowH).style('fill', 'transparent')
+      .on('pointermove', (evt) => window.sdShow(tip, el, evt, [r[key], 'Revenue ' + window.sdMoney(r.revenue), 'Profit ' + window.sdMoney(r.profit), 'Margin ' + r.margin_pct + '%', window.sdInt(r.orders) + ' orders', chosen === r[key] ? 'Click to clear' : 'Click to filter']))
+      .on('pointerleave', () => { tip.hidden = true; })
+      .on('click', () => dash.setParams({[param]: chosen === r[key] ? '' : r[key]}));
+  });
+});
+hbar('items', 'by_item', 'item', 'item');
+hbar('regions', 'by_region', 'region', 'region');
+hbar('channels', 'by_channel', 'channel', 'channel');
+
+dash.draw('countries', (tb) => {
+  tb.replaceChildren();
+  const d = dash.data('top_countries');
+  if (d.status !== 'ok' || !d.data) return;
+  d.data.forEach((r) => {
+    const tr = document.createElement('tr');
+    [['country', String], ['region', String], ['revenue', window.sdMoney], ['profit', window.sdMoney], ['margin_pct', (v) => v + '%'], ['orders', window.sdInt]].forEach(([c, f], i) => {
+      const td = document.createElement('td');
+      if (i >= 2) td.className = 'num';
+      td.textContent = r[c] == null ? '' : f(r[c]);
+      tr.appendChild(td);
+    });
+    tb.appendChild(tr);
+  });
+});
+
+document.querySelectorAll('[data-param]').forEach((s) => s.addEventListener('change', () => dash.setParams({[s.dataset.param]: s.value})));
+document.querySelectorAll('#reset').forEach((b) => b.addEventListener('click', () => dash.resetParams()));
+dash.onData(() => {
+  const p = dash.params();
+  document.querySelectorAll('[data-param]').forEach((s) => { if (document.activeElement !== s) s.value = p[s.dataset.param] || ''; });
+  document.querySelectorAll('#country-note').forEach((n) => { n.hidden = !(p.item || p.channel); });
+});
+</script>
+</body>
+</html>
